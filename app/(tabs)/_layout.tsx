@@ -3,7 +3,9 @@ import { Tabs } from 'expo-router';
 
 export default function TabLayout() {
   return (
-    <Tabs screenOptions={{ tabBarActiveTintColor: 'blue' }}>
+    <Tabs
+      screenOptions={{ tabBarActiveTintColor: 'blue,', headerShown: false }}
+    >
       <Tabs.Screen
         name="index"
         options={{
@@ -14,7 +16,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="[userId]"
         options={{
           title: 'Perfil',
           tabBarIcon: ({ color }) => (
@@ -22,8 +24,16 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen name="event/[id]" options={{ href: null }} />
-      <Tabs.Screen name="location/[id]" options={{ href: null }} />
+      <Tabs.Screen
+        name="location/[locationId]"
+        options={{
+          title: 'Location',
+          href: null,
+          tabBarIcon: ({ color }) => (
+            <FontAwesome size={27} name="map-marker" color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
