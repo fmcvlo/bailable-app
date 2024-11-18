@@ -1,13 +1,18 @@
-import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
+import {} from '../services/useAuth';
+import { StyleSheet } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
 
-export default function TabLayout() {
+export default function TabsLayout() {
   return (
     <Tabs
-      screenOptions={{ tabBarActiveTintColor: 'blue,', headerShown: false }}
+      screenOptions={{
+        tabBarActiveTintColor: '#FFBD3F',
+        headerShown: false,
+      }}
     >
       <Tabs.Screen
-        name="index"
+        name="HomeScreen"
         options={{
           title: 'Home',
           tabBarIcon: ({ color }) => (
@@ -28,7 +33,7 @@ export default function TabLayout() {
         name="location/[locationId]"
         options={{
           title: 'Location',
-          href: null,
+          href: null, // No permite que esta ruta sea accesible directamente
           tabBarIcon: ({ color }) => (
             <FontAwesome size={27} name="map-marker" color={color} />
           ),
@@ -37,3 +42,11 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});

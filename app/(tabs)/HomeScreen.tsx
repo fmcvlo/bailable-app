@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, FlatList, TextInput } from 'react-native';
 import { Avatar } from 'react-native-paper';
 import { FontAwesome } from '@expo/vector-icons';
-import EventCard from './EventCard'; // Ensure this import points to your EventCard component
-import places from '../constants/placesData';
+import EventCard from '../../components/EventCard'; // Ensure this import points to your EventCard component
+import places from '../../constants/placesData';
 
 export default function HomeScreen() {
   const renderPlace = ({ item }) => (
@@ -38,7 +38,7 @@ export default function HomeScreen() {
           className="bg-transparent mx-1"
         />
       </View>
-      <Text className="text-2xl font-bold my-4">Lugares Cercanos</Text>
+      <Text className="text-2xl font-bold my-4">Boliches cercanos</Text>
       <FlatList
         className="flex-1 w-full"
         contentContainerStyle={{ alignItems: 'center' }}
