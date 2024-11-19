@@ -7,4 +7,5 @@ export default class Endpoints {
   static RESERVAS = `api/Reservas`;
   static GET_USER = `api/Users`;
   static GET_RESERVAS = `api/Reservas`;
+  static REGISTER = `api/Users/register`;
 }

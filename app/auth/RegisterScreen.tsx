@@ -7,43 +7,99 @@ import {
   Alert,
   TouchableOpacity,
 } from 'react-native';
+import { useRouter } from 'expo-router';
+import { GenericHtppService } from '../services/genericHtppService';
+import Endpoints from '../../helpers/endpoints'; // Asegúrate de que esté configurado correctamente
 
 export default function RegisterScreen() {
   // Estados para los campos del formulario
+  const router = useRouter();
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rol, setRol] = useState('0'); // Valor inicial para el rol
+  const [loading, setLoading] = useState(false); // Estado de carga
 
-  // Validación del campo "rol"
-  const handleRolChange = (text) => {
-    if (text === '1' || text === '0' || text === '') {
-      setRol(text);
+  // Funciones de validación
+  const validateName = (name) => /^[a-zA-Z\s]{2,50}$/.test(name); // Solo letras y espacios (entre 2 y 50 caracteres)
+  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); // Formato de correo electrónico
+  const validatePassword = (password) =>
+    /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(password); // Mínimo 8 caracteres, al menos una letra y un número
+  const validateRol = (rol) => /^0|1$/.test(rol); // Solo valores "0" o "1"
+
+  // Validación del formulario completo
+  const validateForm = () => {
+    if (!validateName(nombre)) {
+      Alert.alert('Error', 'El nombre debe tener entre 2 y 50 letras.');
+      return false;
     }
+
+    if (!validateName(apellido)) {
+      Alert.alert('Error', 'El apellido debe tener entre 2 y 50 letras.');
+      return false;
+    }
+
+    if (!validateEmail(email)) {
+      Alert.alert('Error', 'El email no tiene un formato válido.');
+      return false;
+    }
+
+    if (!validatePassword(password)) {
+      Alert.alert(
+        'Error',
+        'La contraseña debe tener al menos 8 caracteres, incluyendo una letra y un número.'
+      );
+      return false;
+    }
+
+    if (!validateRol(rol)) {
+      Alert.alert('Error', 'El rol debe ser 0 (Usuario) o 1 (Administrador).');
+      return false;
+    }
+
+    return true;
   };
 
   // Manejo del envío del formulario
-  const handleSubmit = () => {
-    if (!nombre || !apellido || !email || !password || !rol) {
-      Alert.alert('Registro Incompleto', 'Todos los campos son obligatorios.');
+  const handleSubmit = async () => {
+    if (!validateForm()) {
       return;
     }
 
-    if (rol !== '1' && rol !== '0') {
-      Alert.alert(
-        'Error en Rol',
-        'El rol debe ser 0 (Usuario) o 1 (Administrador).'
+    // Datos del formulario
+    const payload = {
+      name: nombre,
+      surname: apellido,
+      email: email,
+      password: password,
+      role: parseInt(rol, 10), // Convertir rol a número
+    };
+
+    // Enviar solicitud al backend usando GenericHtppService
+    const genericService = new GenericHtppService();
+    setLoading(true);
+
+    try {
+      const response = await genericService.httpPost(
+        Endpoints.REGISTER,
+        payload
       );
-      return;
-    }
 
-    Alert.alert(
-      'Registro Exitoso',
-      `¡Bienvenido, ${nombre} ${apellido}!\nTu cuenta ha sido registrada con éxito.\nEmail: ${email}\nRol: ${
-        rol === '1' ? 'Administrador' : 'Usuario'
-      }`
-    );
+      if (response.status === 204) {
+        Alert.alert('Registro Exitoso', 'Tu cuenta ha sido registrada.');
+        router.push('/auth/LoginScreen');
+      } else {
+        Alert.alert('Error', 'Hubo un problema al registrar el usuario.');
+      }
+    } catch (error) {
+      console.error('Error al registrar:', error);
+      const errorMessage =
+        error.response?.data?.message || 'Error desconocido.';
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -97,7 +153,7 @@ export default function RegisterScreen() {
       <TextInput
         style={styles.input}
         value={rol}
-        onChangeText={handleRolChange}
+        onChangeText={setRol}
         keyboardType="numeric"
         maxLength={1}
         placeholder="0 o 1"
@@ -105,8 +161,14 @@ export default function RegisterScreen() {
       />
 
       {/* Botón de Registrar */}
-      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-        <Text style={styles.buttonText}>Registrar</Text>
+      <TouchableOpacity
+        style={[styles.button, loading && { backgroundColor: '#ccc' }]}
+        onPress={handleSubmit}
+        disabled={loading}
+      >
+        <Text style={styles.buttonText}>
+          {loading ? 'Registrando...' : 'Registrar'}
+        </Text>
       </TouchableOpacity>
     </View>
   );
