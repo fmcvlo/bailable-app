@@ -52,7 +52,7 @@ export default function LoginScreen() {
         // Almacenar los datos del usuario
         await AsyncStorage.setItem('userId', response.data.userId);
         console.log('userId guardado en AsyncStorage:', response.data.userId);
-
+        router.replace('/home');
         // Redirigir a la pantalla principal
         router.push('/HomeScreen');
       } else {
