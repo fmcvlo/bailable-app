@@ -1,16 +1,78 @@
-import React from 'react';
-import { View, Text, FlatList, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  TextInput,
+  ActivityIndicator,
+} from 'react-native';
 import { Avatar } from 'react-native-paper';
 import { FontAwesome } from '@expo/vector-icons';
-import EventCard from '../../components/EventCard'; // Ensure this import points to your EventCard component
-import places from '../../constants/placesData';
+import EventCard from '../../components/EventCard'; // Asegúrate de que apunte correctamente
+import { GenericHtppService } from '../services/genericHtppService';
+import Endpoints from '../../helpers/endpoints';
 
 export default function HomeScreen() {
+  const [events, setEvents] = useState([]); // Estado para almacenar los datos
+  const [loading, setLoading] = useState(true); // Estado de carga
+  const [error, setError] = useState(null);
+
+  const adaptEvent = (event) => ({
+    id: event.evento_id || 'undefined-id',
+    title: event.nombre || 'Título no disponible',
+    description: event.descripcion || 'Descripción no disponible',
+    date: event.date
+      ? new Date(event.date).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        })
+      : 'Fecha no disponible',
+    image: event.imgSource
+      ? `http://your-server-url${event.imgSource}`
+      : 'http://your-server-url/default-image.jpg',
+  });
+
+  useEffect(() => {
+    const fetchEventos = async () => {
+      const genericService = new GenericHtppService();
+      try {
+        const response = await genericService.httpGetEventos(Endpoints.EVENTOS);
+        const adaptedEvents = response.data.map(adaptEvent);
+        console.log('Adapted Events:', adaptedEvents); // Verifica los datos
+        setEvents(adaptedEvents);
+      } catch (err) {
+        console.error('Error al obtener los eventos:', err);
+        setError('No se pudieron cargar los datos.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEventos();
+  }, []);
+
   const renderPlace = ({ item }) => (
     <View className="my-4 w-full items-center">
       <EventCard event={item} />
     </View>
   );
+
+  if (loading) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="#0000ff" />
+        <Text>Cargando datos...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <Text>{error}</Text>
+      </View>
+    );
+  }
 
   return (
     <View className="flex flex-col items-center bg-gray-100 min-h-screen">
@@ -42,8 +104,8 @@ export default function HomeScreen() {
       <FlatList
         className="flex-1 w-full"
         contentContainerStyle={{ alignItems: 'center' }}
-        data={places}
-        keyExtractor={(item) => item.id.toString()}
+        data={events}
+        keyExtractor={(item, index) => item.id?.toString() || index.toString()} // Clave única para cada elemento
         renderItem={renderPlace}
       />
     </View>

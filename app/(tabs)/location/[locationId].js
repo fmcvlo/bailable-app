@@ -1,41 +1,68 @@
-import React, { useState } from 'react';
-import { View, Text, Image, FlatList, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  Image,
+  FlatList,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { FontAwesome } from '@expo/vector-icons';
-
-const eventDetails = {
-  title: 'PICHEO FEST. (+18)',
-  date: 'Desde el 28 de Octubre 2024 a las 00:00 hasta el 29 de Octubre 2024 a las 23:55',
-  image: 'https://via.placeholder.com/800x400',
-  tickets: [
-    {
-      id: 1,
-      tipo: 'MESA VIP STAGE',
-      valor: '$700.000',
-      descripcion: 'MESA VIP PARA 10 PERSONAS, %50 DEL VALOR EN CONSUMISIÓN',
-    },
-    {
-      id: 2,
-      tipo: 'ACCESO GENERAL + CONSUMISIÓN',
-      valor: '$200.000',
-      descripcion: 'ACCESO GENERAL + 1 BOTELLA',
-    },
-    {
-      id: 3,
-      tipo: 'ACCESO GENERAL',
-      valor: '$75.000',
-      descripcion: 'ACCESO A PISTA',
-    },
-  ],
-};
+import { useRouter, useLocalSearchParams } from 'expo-router'; // Para obtener parámetros
+import { GenericHtppService } from '../../services/genericHtppService';
+import Endpoints from '../../../helpers/endpoints';
 
 export default function LocationScreen() {
-  const [selectedQuantities, setSelectedQuantities] = useState(
-    eventDetails.tickets.reduce(
-      (acc, ticket) => ({ ...acc, [ticket.id]: '0' }),
-      {}
-    )
-  );
+  const [services, setServices] = useState([]); // Estado para los servicios
+  const [selectedQuantities, setSelectedQuantities] = useState({}); // Estado para cantidades seleccionadas
+  const [loading, setLoading] = useState(true); // Estado de carga
+  const [error, setError] = useState(null); // Estado de error
+
+  const params = useLocalSearchParams(); // Obtener los parámetros del link
+  const eventoId = params.locationId; // GUID del evento desde los parámetros
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      const genericService = new GenericHtppService();
+      try {
+        // Solicitud al endpoint con el eventoId como query param
+        const response = await genericService.httpGetServicios(
+          Endpoints.GET_SERVICES,
+          { eventoId }
+        );
+
+        // Filtrar los datos necesarios y almacenarlos en el estado
+        const filteredServices = response.data.servicios.map((service) => ({
+          id: service.servicioId,
+          tipo: service.nombre,
+          descripcion: service.descripcion,
+          valor: `$${service.precio}`,
+        }));
+
+        setServices(filteredServices);
+
+        // Configurar el estado inicial para las cantidades seleccionadas
+        setSelectedQuantities(
+          filteredServices.reduce(
+            (acc, service) => ({ ...acc, [service.id]: '0' }),
+            {}
+          )
+        );
+      } catch (err) {
+        console.error('Error al obtener los servicios:', err);
+        setError('No se pudieron cargar los datos.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (eventoId) {
+      fetchServices(); // Llamar al servicio solo si eventoId está definido
+    } else {
+      setError('No se proporcionó un evento válido.');
+      setLoading(false);
+    }
+  }, [eventoId]);
 
   const handleQuantityChange = (id, value) => {
     setSelectedQuantities((prevQuantities) => ({
@@ -46,20 +73,15 @@ export default function LocationScreen() {
 
   const renderTicket = ({ item }) => (
     <View className="flex-row items-center justify-between w-full px-4 py-3 border-b border-gray-300">
-      {/* Ticket Info */}
       <View className="flex-1">
         <Text className="text-base font-semibold text-gray-800">
           {item.tipo}
         </Text>
         <Text className="text-xs text-gray-500">{item.descripcion}</Text>
       </View>
-
-      {/* Ticket Price */}
       <Text className="w-1/4 text-base font-semibold text-gray-800 text-center">
         {item.valor}
       </Text>
-
-      {/* Quantity Picker with Display */}
       <View className="w-1/4 flex-row items-center justify-end">
         <Text className="text-base text-gray-800 mr-1">
           {selectedQuantities[item.id]}
@@ -78,26 +100,35 @@ export default function LocationScreen() {
     </View>
   );
 
+  if (loading) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="#0000ff" />
+        <Text>Cargando datos...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <Text>{error}</Text>
+      </View>
+    );
+  }
+
   return (
     <View className="flex-1 p-4 bg-gray-100">
       <Text className="text-2xl font-bold text-gray-800 text-center mb-2">
-        {eventDetails.title}
+        Servicios Disponibles
       </Text>
-      <View className="flex-row items-center justify-center mb-4">
-        <FontAwesome name="calendar" size={16} color="#FFC107" />
-        <Text className="text-sm text-yellow-500 ml-2">
-          {eventDetails.date}
-        </Text>
-      </View>
       <Image
-        source={{ uri: eventDetails.image }}
+        source={{ uri: 'https://via.placeholder.com/800x400' }}
         className="w-full h-48 rounded-lg mb-4"
       />
-
-      {/* Header Row */}
       <View className="flex-row justify-between w-full px-4 py-2 bg-gray-200 border-b border-gray-300">
         <Text className="flex-1 text-lg font-semibold text-gray-800">
-          Tipo de Ticket
+          Tipo de Servicio
         </Text>
         <Text className="w-1/4 text-lg font-semibold text-gray-800 text-center">
           Valor
@@ -106,24 +137,14 @@ export default function LocationScreen() {
           Cantidad
         </Text>
       </View>
-
-      {/* Ticket Rows */}
       <FlatList
-        data={eventDetails.tickets}
-        keyExtractor={(item) => item.id.toString()}
+        data={services}
+        keyExtractor={(item) => item.id}
         renderItem={renderTicket}
       />
-
       <TouchableOpacity className="mt-4 bg-yellow-500 py-3 rounded-md">
         <Text className="text-center text-white font-semibold">COMPRAR</Text>
       </TouchableOpacity>
-
-      <Text className="text-center text-pink-600 font-bold text-sm mt-4">
-        Evento solo para Mayores de 18 Años.
-      </Text>
-      <Text className="text-center text-gray-500 text-sm mt-2">
-        Veni a la fiesta mas linda de Buenos Aires
-      </Text>
     </View>
   );
 }
