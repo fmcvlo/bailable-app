@@ -36,7 +36,12 @@ export default function HomeScreen() {
     const fetchEventos = async () => {
       const genericService = new GenericHtppService();
       try {
-        const response = await genericService.httpGetEventos(Endpoints.EVENTOS);
+        const date = new Date().toISOString().split('T')[0];
+        console.log('Fecha actual:', date);
+        const response = await genericService.httpGet(Endpoints.EVENTOS, {
+          date,
+        });
+
         const adaptedEvents = response.data.map(adaptEvent);
         console.log('Adapted Events:', adaptedEvents); // Verifica los datos
         setEvents(adaptedEvents);

@@ -26,10 +26,9 @@ export default function LocationScreen() {
       const genericService = new GenericHtppService();
       try {
         // Solicitud al endpoint con el eventoId como query param
-        const response = await genericService.httpGetServicios(
-          Endpoints.GET_SERVICES,
-          { eventoId }
-        );
+        const response = await genericService.httpGet(Endpoints.GET_SERVICES, {
+          eventoId,
+        });
 
         // Filtrar los datos necesarios y almacenarlos en el estado
         const filteredServices = response.data.servicios.map((service) => ({

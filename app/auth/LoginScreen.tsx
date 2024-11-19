@@ -9,35 +9,27 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { GenericHtppService } from '../services/genericHtppService';
+import Endpoints from '../../helpers/endpoints';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const [authData, setAuthData] = useState({
+    email: '',
     password: '',
-    username: '',
   });
-
-  // Validar credenciales
-  const validateCredentials = (email: string, password: string) => {
-    if (email === 'admin' && password === '1234') {
-      return { id: '1', type: 'admin', route: '/admin' };
-    } else if (email === 'user' && password === '1234') {
-      return { id: '2', type: 'user', route: '/HomeScreen' };
-    } else {
-      return null;
-    }
-  };
 
   // Manejar cambio de texto
   const handleTextChange = (field, text: string) => {
     setAuthData({ ...authData, [field]: text });
 
-    if (field === 'username') {
-      setUsername(text);
+    if (field === 'email') {
+      setEmail(text);
     } else if (field === 'password') {
       setPassword(text);
     }
@@ -45,20 +37,30 @@ export default function LoginScreen() {
 
   // Manejar login
   const handleLogin = async () => {
-    console.log('Auth data: ', authData);
-
     setLoading(true);
     try {
-      const user = validateCredentials(authData.username, authData.password);
+      console.log(authData);
+      const genericHtppService = new GenericHtppService(); // Crear una instancia del servicio
+      const response = await genericHtppService.httpPost(Endpoints.AUTH_LOGIN, {
+        email: authData.email,
+        password: authData.password,
+      }); // Llamar al método login
 
-      if (user) {
-        console.log('Usuario autenticado:', user);
-        router.push(user.route); // Redirige a la ruta correspondiente
+      if (response.status === 200 && response.data.userId) {
+        console.log('Inicio de sesión exitoso:', response.data);
+
+        // Almacenar los datos del usuario
+        await AsyncStorage.setItem('userId', response.data.userId);
+        console.log('userId guardado en AsyncStorage:', response.data.userId);
+
+        // Redirigir a la pantalla principal
+        router.push('/HomeScreen');
       } else {
-        Alert.alert('Error', 'Credenciales inválidas');
+        console.error('Error al iniciar sesión:', response.error);
+        Alert.alert('Error', 'Credenciales inválidas.');
       }
     } catch (error) {
-      console.error(error);
+      console.error('Error en el proceso de inicio de sesión:', error);
       Alert.alert('Error', 'Algo salió mal.');
     } finally {
       setLoading(false);
@@ -70,9 +72,9 @@ export default function LoginScreen() {
       <Text style={styles.title}>Iniciar Sesión</Text>
       <TextInput
         style={styles.input}
-        placeholder="Usuario"
-        value={username}
-        onChangeText={(text: string) => handleTextChange('username', text)} // Usamos la función para el campo username
+        placeholder="Email"
+        value={email}
+        onChangeText={(text: string) => handleTextChange('email', text)} // Usamos la función para el campo username
       />
       <TextInput
         style={styles.input}
@@ -86,7 +88,6 @@ export default function LoginScreen() {
         onPress={handleLogin}
         disabled={loading}
       />
-      {/* Enlace a RegisterScreen */}
       <TouchableOpacity onPress={() => router.push('auth/RegisterScreen')}>
         <Text style={styles.registerLink}>
           ¿No tienes cuenta? Regístrate aquí
