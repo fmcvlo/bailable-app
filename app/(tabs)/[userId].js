@@ -1,84 +1,136 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, StyleSheet, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import { Avatar, Button, Divider } from 'react-native-paper';
-import { useLocalSearchParams } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { GenericHtppService } from '../services/genericHtppService';
+import Endpoints from '../../helpers/endpoints';
 
 export default function ProfileScreen() {
-  const { userId } = useLocalSearchParams();
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null); // Datos del usuario
+  const [reservas, setReservas] = useState([]); // Reservas del usuario
+  const [loadingUser, setLoadingUser] = useState(true); // Estado de carga para el usuario
+  const [loadingReservas, setLoadingReservas] = useState(true); // Estado de carga para las reservas
 
   useEffect(() => {
-    // Simulate fetching user data with mock data if no backend is available
-    const mockUserData = {
-      id: userId || 'default-user',
-      name: 'Franco Machiavello',
-      profileImage: 'https://example.com/profile-image.jpg',
-      events: 0,
-      followers: 0,
-      following: 0,
+    const fetchUserData = async () => {
+      try {
+        const userId = await AsyncStorage.getItem('userId');
+        if (!userId) {
+          Alert.alert('Error', 'No se encontró información del usuario.');
+          setLoadingUser(false);
+          return;
+        }
+
+        const genericService = new GenericHtppService();
+
+        // Obtener datos del usuario
+        const userResponse = await genericService.httpGet(
+          `${Endpoints.GET_USER}/${userId}`
+        );
+        setUser(userResponse.data);
+
+        // Obtener reservas del usuario
+        const reservasResponse = await genericService.httpGet(
+          `${Endpoints.GET_RESERVAS}`,
+          { userId }
+        );
+        setReservas(reservasResponse.data.reservas || []);
+      } catch (error) {
+        console.error('Error al obtener datos:', error);
+        Alert.alert('Error', 'Hubo un problema al cargar los datos.');
+      } finally {
+        setLoadingUser(false);
+        setLoadingReservas(false);
+      }
     };
 
-    // Simulate a data fetch with a delay to represent future API integration
-    const fetchUser = async () => {
-      setLoading(true);
-      // Simulating network delay
-      setTimeout(() => {
-        setUser(mockUserData);
-        setLoading(false);
-      }, 1000);
-    };
+    fetchUserData();
+  }, []);
 
-    fetchUser();
-  }, [userId]);
-
-  if (loading) {
-    return <ActivityIndicator size="large" color="#0000ff" />;
+  if (loadingUser || loadingReservas) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0000ff" />
+        <Text>Cargando datos...</Text>
+      </View>
+    );
   }
 
   if (!user) {
-    return <Text>Error loading user data.</Text>;
+    return (
+      <View style={styles.errorContainer}>
+        <Text>Error al cargar los datos del usuario.</Text>
+      </View>
+    );
   }
+
+  const renderReserva = ({ item }) => (
+    <View style={styles.ticketItem}>
+      <Text style={styles.eventName}>{item.nombreEvento}</Text>
+      <Text style={styles.eventDate}>
+        Fecha: {new Date(item.fecha).toLocaleDateString()}
+      </Text>
+      <Text style={styles.eventPrice}>Precio: ${item.precio}</Text>
+      <Text style={styles.eventPeople}>Personas: {item.cantidadPersonas}</Text>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
+      {/* Encabezado del perfil */}
       <View style={styles.header}>
-        <Avatar.Image size={100} source={{ uri: user.profileImage }} />
+        <Avatar.Image
+          size={100}
+          source={{ uri: 'https://example.com/default-avatar.png' }}
+        />
         <View style={styles.info}>
-          <Text style={styles.name}>{user.name}</Text>
+          <Text style={styles.name}>{`${user.name} ${user.surname}`}</Text>
           <Button mode="outlined" style={styles.editButton}>
             Editar
           </Button>
         </View>
       </View>
 
+      {/* Estadísticas */}
       <View style={styles.stats}>
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>{user.events}</Text>
-          <Text style={styles.statLabel}>Eventos</Text>
+          <Text style={styles.statNumber}>{reservas.length}</Text>
+          <Text style={styles.statLabel}>Reservas</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>{user.followers}</Text>
+          <Text style={styles.statNumber}>0</Text>
           <Text style={styles.statLabel}>Seguidores</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>{user.following}</Text>
+          <Text style={styles.statNumber}>0</Text>
           <Text style={styles.statLabel}>Seguidos</Text>
         </View>
       </View>
 
       <Divider style={{ marginVertical: 10 }} />
 
+      {/* Sección de Tickets */}
       <View style={styles.tabContainer}>
         <Text style={styles.tabTitle}>TICKETS</Text>
       </View>
 
       <View style={styles.content}>
-        <Image
-          source={{ uri: 'https://example.com/no-tickets.png' }}
-          style={styles.noTicketsImage}
-        />
-        <Text style={styles.noTicketsText}>No hay tickets</Text>
+        {reservas.length > 0 ? (
+          <FlatList
+            data={reservas}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={renderReserva}
+          />
+        ) : (
+          <Text style={styles.noTicketsText}>No hay tickets</Text>
+        )}
       </View>
     </View>
   );
@@ -89,6 +141,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'white',
     padding: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -138,13 +200,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  noTicketsImage: {
-    width: 120,
-    height: 120,
-    marginBottom: 20,
-  },
   noTicketsText: {
     fontSize: 18,
     color: 'gray',
+  },
+  ticketItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  eventName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  eventDate: {
+    fontSize: 14,
+    color: 'gray',
+  },
+  eventPrice: {
+    fontSize: 14,
+  },
+  eventPeople: {
+    fontSize: 14,
   },
 });

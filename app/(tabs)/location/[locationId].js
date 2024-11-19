@@ -2,19 +2,22 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  Image,
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
+import { CheckBox } from 'react-native-elements'; // Librería para CheckBox
 import { Picker } from '@react-native-picker/picker';
 import { useRouter, useLocalSearchParams } from 'expo-router'; // Para obtener parámetros
 import { GenericHtppService } from '../../services/genericHtppService';
 import Endpoints from '../../../helpers/endpoints';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LocationScreen() {
   const [services, setServices] = useState([]); // Estado para los servicios
-  const [selectedQuantities, setSelectedQuantities] = useState({}); // Estado para cantidades seleccionadas
+  const [selectedServices, setSelectedServices] = useState([]); // Estado para los servicios seleccionados
+  const [numPeople, setNumPeople] = useState('1'); // Número de personas seleccionadas
   const [loading, setLoading] = useState(true); // Estado de carga
   const [error, setError] = useState(null); // Estado de error
 
@@ -25,28 +28,19 @@ export default function LocationScreen() {
     const fetchServices = async () => {
       const genericService = new GenericHtppService();
       try {
-        // Solicitud al endpoint con el eventoId como query param
         const response = await genericService.httpGet(Endpoints.GET_SERVICES, {
           eventoId,
         });
 
-        // Filtrar los datos necesarios y almacenarlos en el estado
-        const filteredServices = response.data.servicios.map((service) => ({
+        // Transformar los datos del servicio
+        const fetchedServices = response.data.servicios.map((service) => ({
           id: service.servicioId,
-          tipo: service.nombre,
-          descripcion: service.descripcion,
-          valor: `$${service.precio}`,
+          name: service.nombre,
+          description: service.descripcion,
+          price: service.precio,
         }));
 
-        setServices(filteredServices);
-
-        // Configurar el estado inicial para las cantidades seleccionadas
-        setSelectedQuantities(
-          filteredServices.reduce(
-            (acc, service) => ({ ...acc, [service.id]: '0' }),
-            {}
-          )
-        );
+        setServices(fetchedServices);
       } catch (err) {
         console.error('Error al obtener los servicios:', err);
         setError('No se pudieron cargar los datos.');
@@ -63,41 +57,100 @@ export default function LocationScreen() {
     }
   }, [eventoId]);
 
-  const handleQuantityChange = (id, value) => {
-    setSelectedQuantities((prevQuantities) => ({
-      ...prevQuantities,
-      [id]: value,
-    }));
+  const toggleServiceSelection = (id) => {
+    setSelectedServices((prevSelected) => {
+      if (prevSelected.includes(id)) {
+        // Si ya está seleccionado, lo eliminamos
+        return prevSelected.filter((serviceId) => serviceId !== id);
+      } else {
+        // Si no está seleccionado, lo agregamos
+        return [...prevSelected, id];
+      }
+    });
   };
 
-  const renderTicket = ({ item }) => (
+  const renderService = ({ item }) => (
     <View className="flex-row items-center justify-between w-full px-4 py-3 border-b border-gray-300">
+      {/* Nombre y descripción del servicio */}
       <View className="flex-1">
         <Text className="text-base font-semibold text-gray-800">
-          {item.tipo}
+          {item.name}
         </Text>
-        <Text className="text-xs text-gray-500">{item.descripcion}</Text>
+        <Text className="text-xs text-gray-500">{item.description}</Text>
       </View>
+
+      {/* Precio */}
       <Text className="w-1/4 text-base font-semibold text-gray-800 text-center">
-        {item.valor}
+        ${item.price}
       </Text>
-      <View className="w-1/4 flex-row items-center justify-end">
-        <Text className="text-base text-gray-800 mr-1">
-          {selectedQuantities[item.id]}
-        </Text>
-        <Picker
-          selectedValue={selectedQuantities[item.id]}
-          onValueChange={(value) => handleQuantityChange(item.id, value)}
-          style={{ width: 50 }}
-          className="bg-gray-200 border border-gray-300 rounded-md"
-        >
-          {[...Array(11).keys()].map((i) => (
-            <Picker.Item key={i} label={String(i)} value={String(i)} />
-          ))}
-        </Picker>
-      </View>
+
+      {/* Checkbox */}
+      <CheckBox
+        checked={selectedServices.includes(item.id)}
+        onPress={() => toggleServiceSelection(item.id)}
+        containerStyle={{ margin: 0, padding: 0 }}
+      />
     </View>
   );
+
+  const renderPeoplePicker = () => (
+    <View className="mt-4">
+      <Text className="text-base font-semibold text-gray-800">
+        Cantidad de personas
+      </Text>
+      <Picker
+        selectedValue={numPeople}
+        onValueChange={(value) => setNumPeople(value)}
+        style={{ width: '100%', backgroundColor: '#f0f0f0', borderRadius: 4 }}
+      >
+        {[...Array(11).keys()]
+          .filter((i) => i !== 0)
+          .map((i) => (
+            <Picker.Item key={i} label={String(i)} value={String(i)} />
+          ))}
+      </Picker>
+    </View>
+  );
+
+  const handleComprar = async () => {
+    try {
+      const userId = await AsyncStorage.getItem('userId'); // Obtener el userId del AsyncStorage
+
+      if (!userId) {
+        console.error('No se encontró userId en AsyncStorage.');
+        Alert.alert('Error', 'No se encontró información del usuario.');
+        return;
+      }
+
+      // Construir la estructura de los parámetros según lo que espera el endpoint
+      const serviciosIds = selectedServices; // IDs de los servicios seleccionados
+      const payload = {
+        userId, // Usuario que hace la reserva
+        eventoId, // ID del evento
+        serviciosIds, // Lista de IDs de servicios seleccionados
+        cantidadPersonas: parseInt(numPeople, 10), // Cantidad de personas (convertir a número)
+      };
+
+      console.log('Payload para reserva:', payload);
+
+      const genericService = new GenericHtppService();
+      const response = await genericService.httpPost(
+        Endpoints.RESERVAS,
+        payload
+      );
+
+      if (response.status == 200) {
+        console.log('Reserva realizada con éxito:', response.data);
+        Alert.alert('Éxito', 'Reserva realizada con éxito.');
+      } else {
+        console.error('Error al realizar la reserva:', response.data);
+        Alert.alert('Error', 'Hubo un problema al realizar la reserva.');
+      }
+    } catch (error) {
+      console.error('Error en handleComprar:', error);
+      Alert.alert('Error', error.response.data.message);
+    }
+  };
 
   if (loading) {
     return (
@@ -118,30 +171,19 @@ export default function LocationScreen() {
 
   return (
     <View className="flex-1 p-4 bg-gray-100">
-      <Text className="text-2xl font-bold text-gray-800 text-center mb-2">
+      <Text className="text-2xl font-bold text-gray-800 text-center mb-4">
         Servicios Disponibles
       </Text>
-      <Image
-        source={{ uri: 'https://via.placeholder.com/800x400' }}
-        className="w-full h-48 rounded-lg mb-4"
-      />
-      <View className="flex-row justify-between w-full px-4 py-2 bg-gray-200 border-b border-gray-300">
-        <Text className="flex-1 text-lg font-semibold text-gray-800">
-          Tipo de Servicio
-        </Text>
-        <Text className="w-1/4 text-lg font-semibold text-gray-800 text-center">
-          Valor
-        </Text>
-        <Text className="w-1/4 text-lg font-semibold text-gray-800 text-center">
-          Cantidad
-        </Text>
-      </View>
       <FlatList
         data={services}
         keyExtractor={(item) => item.id}
-        renderItem={renderTicket}
+        renderItem={renderService}
       />
-      <TouchableOpacity className="mt-4 bg-yellow-500 py-3 rounded-md">
+      {renderPeoplePicker()}
+      <TouchableOpacity
+        className="mt-4 bg-yellow-500 py-3 rounded-md"
+        onPress={handleComprar}
+      >
         <Text className="text-center text-white font-semibold">COMPRAR</Text>
       </TouchableOpacity>
     </View>

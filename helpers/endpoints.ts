@@ -5,4 +5,6 @@ export default class Endpoints {
   static LOCALES = `api/Locales`;
   static GET_SERVICES = `api/Servicios`;
   static RESERVAS = `api/Reservas`;
+  static GET_USER = `api/Users`;
+  static GET_RESERVAS = `api/Reservas`;
 }
