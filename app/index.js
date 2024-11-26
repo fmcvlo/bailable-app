@@ -1,6 +1,7 @@
-import { View, Text } from 'react-native';
+import React from 'react';
+import { View } from 'react-native';
 import LoginScreen from './auth/LoginScreen';
 
-export default function index() {
-  return <LoginScreen />;
+export default function App() {
+  <LoginScreen />;
 }

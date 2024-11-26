@@ -5,6 +5,7 @@ import {
   FlatList,
   TextInput,
   ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
 import { Avatar } from 'react-native-paper';
 import { FontAwesome } from '@expo/vector-icons';
@@ -13,8 +14,8 @@ import { GenericHtppService } from '../services/genericHtppService';
 import Endpoints from '../../helpers/endpoints';
 
 export default function HomeScreen() {
-  const [events, setEvents] = useState([]); // Estado para almacenar los datos
-  const [loading, setLoading] = useState(true); // Estado de carga
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const adaptEvent = (event) => ({
@@ -43,7 +44,7 @@ export default function HomeScreen() {
         });
 
         const adaptedEvents = response.data.map(adaptEvent);
-        console.log('Adapted Events:', adaptedEvents); // Verifica los datos
+        console.log('Adapted Events:', adaptedEvents);
         setEvents(adaptedEvents);
       } catch (err) {
         console.error('Error al obtener los eventos:', err);
@@ -57,14 +58,14 @@ export default function HomeScreen() {
   }, []);
 
   const renderPlace = ({ item }) => (
-    <View className="my-4 w-full items-center">
+    <View style={styles.eventCardContainer}>
       <EventCard event={item} />
     </View>
   );
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center">
+      <View style={styles.centeredContainer}>
         <ActivityIndicator size="large" color="#0000ff" />
         <Text>Cargando datos...</Text>
       </View>
@@ -73,46 +74,102 @@ export default function HomeScreen() {
 
   if (error) {
     return (
-      <View className="flex-1 justify-center items-center">
+      <View style={styles.centeredContainer}>
         <Text>{error}</Text>
       </View>
     );
   }
 
   return (
-    <View className="flex flex-col items-center bg-gray-100 min-h-screen">
-      <View className="flex-row items-center bg-white w-full rounded-full shadow-md mb-4 px-2">
-        <View className="flex-row items-center bg-gray-200 rounded-full flex-1 px-3 py-2">
+    <View style={styles.container}>
+      <View style={styles.searchBarContainer}>
+        <View style={styles.searchBar}>
           <FontAwesome
             name="search"
             size={20}
             color="#9CA3AF"
-            className="mr-2"
+            style={styles.searchIcon}
           />
-          <TextInput
-            className="flex-1 bg-gray-200 rounded-full px-2"
-            placeholder="Buscar..."
-          />
+          <TextInput style={styles.searchInput} placeholder="Buscar..." />
         </View>
-        <Avatar.Icon
-          size={40}
-          icon="bell-outline"
-          className="bg-transparent mx-1"
-        />
+        <Avatar.Icon size={40} icon="bell-outline" style={styles.avatarIcon} />
         <Avatar.Icon
           size={40}
           icon="account-circle"
-          className="bg-transparent mx-1"
+          style={styles.avatarIcon}
         />
       </View>
-      <Text className="text-2xl font-bold my-4">Boliches cercanos</Text>
+      <Text style={styles.title}>Boliches cercanos</Text>
       <FlatList
-        className="flex-1 w-full"
-        contentContainerStyle={{ alignItems: 'center' }}
+        contentContainerStyle={styles.flatListContent}
         data={events}
-        keyExtractor={(item, index) => item.id?.toString() || index.toString()} // Clave única para cada elemento
+        keyExtractor={(item, index) => item.id?.toString() || index.toString()}
         renderItem={renderPlace}
       />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 16,
+    paddingTop: 20,
+  },
+  centeredContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  searchBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF', // Color uniforme
+    padding: 8,
+    borderRadius: 24,
+    shadowColor: '#000', // Puedes quitar esto si no quieres sombra
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    marginBottom: 16,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    backgroundColor: '#FFFFFF', // Color uniforme blanco
+    borderRadius: 24,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#4B5563',
+    backgroundColor: '#FFFFFF', // Fondo blanco para uniformidad
+    borderRadius: 24,
+  },
+  avatarIcon: {
+    backgroundColor: 'transparent',
+    marginLeft: 8,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  flatListContent: {
+    alignItems: 'center',
+    paddingBottom: 16,
+  },
+  eventCardContainer: {
+    marginBottom: 16,
+    width: '100%',
+    alignItems: 'center',
+  },
+});
