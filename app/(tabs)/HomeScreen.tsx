@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,11 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Avatar } from 'react-native-paper';
-import { FontAwesome } from '@expo/vector-icons';
-import EventCard from '../../components/EventCard'; // Asegúrate de que apunte correctamente
+import { FontAwesome } from 'react-native-vector-icons';
+import EventCard from '../../components/EventCard';
 import { GenericHtppService } from '../services/genericHtppService';
 import Endpoints from '../../helpers/endpoints';
+import { useFocusEffect } from 'expo-router';
 
 export default function HomeScreen() {
   const [events, setEvents] = useState([]);
@@ -33,29 +34,34 @@ export default function HomeScreen() {
       : 'http://your-server-url/default-image.jpg',
   });
 
-  useEffect(() => {
-    const fetchEventos = async () => {
-      const genericService = new GenericHtppService();
-      try {
-        const date = new Date().toISOString().split('T')[0];
-        console.log('Fecha actual:', date);
-        const response = await genericService.httpGet(Endpoints.EVENTOS, {
-          date,
-        });
+  const fetchEventos = async () => {
+    const genericService = new GenericHtppService();
+    try {
+      const date = new Date().toISOString().split('T')[0];
+      console.log('Fecha actual:', date);
+      const response = await genericService.httpGet(Endpoints.EVENTOS, {
+        date,
+      });
 
-        const adaptedEvents = response.data.map(adaptEvent);
-        console.log('Adapted Events:', adaptedEvents);
-        setEvents(adaptedEvents);
-      } catch (err) {
-        console.error('Error al obtener los eventos:', err);
-        setError('No se pudieron cargar los datos.');
-      } finally {
-        setLoading(false);
-      }
-    };
+      const adaptedEvents = response.data.map(adaptEvent);
+      console.log('Adapted Events:', adaptedEvents);
+      setEvents(adaptedEvents);
+      setError(null); // Limpia cualquier error previo
+    } catch (err) {
+      console.error('Error al obtener los eventos:', err);
+      setError('No se pudieron cargar los datos.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchEventos();
-  }, []);
+  // Recargar eventos al enfocar la pantalla
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      fetchEventos();
+    }, [])
+  );
 
   const renderPlace = ({ item }) => (
     <View style={styles.eventCardContainer}>
@@ -125,10 +131,10 @@ const styles = StyleSheet.create({
   searchBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF', // Color uniforme
+    backgroundColor: '#FFFFFF',
     padding: 8,
     borderRadius: 24,
-    shadowColor: '#000', // Puedes quitar esto si no quieres sombra
+    shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 5,
     marginBottom: 16,
@@ -137,7 +143,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    backgroundColor: '#FFFFFF', // Color uniforme blanco
+    backgroundColor: '#FFFFFF',
     borderRadius: 24,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -149,7 +155,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#4B5563',
-    backgroundColor: '#FFFFFF', // Fondo blanco para uniformidad
+    backgroundColor: '#FFFFFF',
     borderRadius: 24,
   },
   avatarIcon: {
