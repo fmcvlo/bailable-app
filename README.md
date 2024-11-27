@@ -7,8 +7,8 @@ Este es un proyecto [Expo](https://expo.dev) creado con [`create-expo-app`](http
 1. **Clona el repositorio y cámbiate a la rama `Web`:**
 
    ```bash
-   git clone <URL_DEL_REPOSITORIO>
-   cd <NOMBRE_DEL_REPOSITORIO>
+   git clone https://github.com/fmcvlo/bailable-app.git
+   cd bailable-app
    git checkout Web
 
    ```
