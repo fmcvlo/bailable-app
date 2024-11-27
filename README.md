@@ -1,21 +1,31 @@
-# Welcome to Bailable-app (frontend)👋
+# Bienvenido a Bailable-app (frontend) 👋
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Este es un proyecto [Expo](https://expo.dev) creado con [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
-## Get started
+## Cómo empezar
 
-1. Install dependencies
+1. **Clona el repositorio y cámbiate a la rama `Web`:**
 
    ```bash
+   git clone <URL_DEL_REPOSITORIO>
+   cd <NOMBRE_DEL_REPOSITORIO>
+   git checkout Web
+
+   ```
+
+2. **Instala las dependencias:**
    npm install
-   ```
 
-2. Start the app
+3. **Inicia la aplicación:**
+   npx expo start
+   o
+   npm start
 
-   ```bash
-    npx expo start
-    or
-    npm start
-   ```
+4. **Usa la aplicación web:**
 
-3. Press w to use te web app (we recommmend using the mobile view in browser)!
+Una vez iniciada la aplicación, presiona la tecla w para abrir la versión web (¡recomendamos usar la vista móvil en el
+navegador!).
+
+## Requisitos
+
+Desarrollada con Node.js v20.18.0. Asegúrate de tener esta versión instalada para evitar problemas de compatibilidad.

@@ -4,79 +4,93 @@ import {
   Text,
   TextInput,
   StyleSheet,
-  Alert,
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { GenericHtppService } from '../services/genericHtppService';
-import Endpoints from '../../helpers/endpoints'; // Asegúrate de que esté configurado correctamente
+import Endpoints from '../../helpers/endpoints';
+import { showMessage } from 'react-native-flash-message';
 
 export default function RegisterScreen() {
-  // Estados para los campos del formulario
   const router = useRouter();
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rol, setRol] = useState('0'); // Valor inicial para el rol
-  const [loading, setLoading] = useState(false); // Estado de carga
+  const [rol, setRol] = useState('0');
+  const [loading, setLoading] = useState(false);
 
-  // Funciones de validación
-  const validateName = (name) => /^[a-zA-Z\s]{2,50}$/.test(name); // Solo letras y espacios (entre 2 y 50 caracteres)
-  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); // Formato de correo electrónico
+  const validateName = (name) => /^[a-zA-Z\s]{2,50}$/.test(name);
+  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
   const validatePassword = (password) =>
-    /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(password); // Mínimo 8 caracteres, al menos una letra y un número
-  const validateRol = (rol) => /^0|1$/.test(rol); // Solo valores "0" o "1"
+    /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&.]{8,}$/.test(password);
 
-  // Validación del formulario completo
+  const validateRol = (rol) => /^0|1$/.test(rol);
+
   const validateForm = () => {
     if (!validateName(nombre)) {
-      Alert.alert('Error', 'El nombre debe tener entre 2 y 50 letras.');
+      showMessage({
+        message: 'Error',
+        description: 'El nombre debe tener entre 2 y 50 letras.',
+        type: 'danger',
+      });
       return false;
     }
 
     if (!validateName(apellido)) {
-      Alert.alert('Error', 'El apellido debe tener entre 2 y 50 letras.');
+      showMessage({
+        message: 'Error',
+        description: 'El apellido debe tener entre 2 y 50 letras.',
+        type: 'danger',
+      });
       return false;
     }
 
     if (!validateEmail(email)) {
-      Alert.alert('Error', 'El email no tiene un formato válido.');
+      showMessage({
+        message: 'Error',
+        description: 'El email no tiene un formato válido.',
+        type: 'danger',
+      });
       return false;
     }
 
     if (!validatePassword(password)) {
-      Alert.alert(
-        'Error',
-        'La contraseña debe tener al menos 8 caracteres, incluyendo una letra y un número.'
-      );
+      showMessage({
+        message: 'Error',
+        description:
+          'La contraseña debe tener al menos 8 caracteres, incluyendo una letra, un número y un carácter especial.',
+        type: 'danger',
+      });
       return false;
     }
 
     if (!validateRol(rol)) {
-      Alert.alert('Error', 'El rol debe ser 0 (Usuario) o 1 (Administrador).');
+      showMessage({
+        message: 'Error',
+        description: 'El rol debe ser 0 (Usuario) o 1 (Administrador).',
+        type: 'danger',
+      });
       return false;
     }
 
     return true;
   };
 
-  // Manejo del envío del formulario
   const handleSubmit = async () => {
     if (!validateForm()) {
       return;
     }
 
-    // Datos del formulario
     const payload = {
       name: nombre,
       surname: apellido,
       email: email,
       password: password,
-      role: parseInt(rol, 10), // Convertir rol a número
+      role: parseInt(rol, 10),
     };
 
-    // Enviar solicitud al backend usando GenericHtppService
     const genericService = new GenericHtppService();
     setLoading(true);
 
@@ -87,16 +101,28 @@ export default function RegisterScreen() {
       );
 
       if (response.status === 204) {
-        Alert.alert('Registro Exitoso', 'Tu cuenta ha sido registrada.');
+        showMessage({
+          message: 'Registro Exitoso',
+          description: 'Tu cuenta ha sido registrada.',
+          type: 'success',
+        });
         router.push('/auth/LoginScreen');
       } else {
-        Alert.alert('Error', 'Hubo un problema al registrar el usuario.');
+        showMessage({
+          message: 'Error',
+          description: 'Hubo un problema al registrar el usuario.',
+          type: 'danger',
+        });
       }
     } catch (error) {
       console.error('Error al registrar:', error);
       const errorMessage =
         error.response?.data?.message || 'Error desconocido.';
-      Alert.alert('Error', errorMessage);
+      showMessage({
+        message: 'Error',
+        description: errorMessage,
+        type: 'danger',
+      });
     } finally {
       setLoading(false);
     }
@@ -105,8 +131,6 @@ export default function RegisterScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Registro de Usuario</Text>
-
-      {/* Campo Nombre */}
       <Text style={styles.label}>Nombre:</Text>
       <TextInput
         style={styles.input}
@@ -115,8 +139,6 @@ export default function RegisterScreen() {
         placeholder="Ingrese su nombre"
         placeholderTextColor="#aaa"
       />
-
-      {/* Campo Apellido */}
       <Text style={styles.label}>Apellido:</Text>
       <TextInput
         style={styles.input}
@@ -125,8 +147,6 @@ export default function RegisterScreen() {
         placeholder="Ingrese su apellido"
         placeholderTextColor="#aaa"
       />
-
-      {/* Campo Email */}
       <Text style={styles.label}>Email:</Text>
       <TextInput
         style={styles.input}
@@ -136,8 +156,6 @@ export default function RegisterScreen() {
         placeholderTextColor="#aaa"
         keyboardType="email-address"
       />
-
-      {/* Campo Contraseña */}
       <Text style={styles.label}>Contraseña:</Text>
       <TextInput
         style={styles.input}
@@ -145,10 +163,8 @@ export default function RegisterScreen() {
         onChangeText={setPassword}
         placeholder="Ingrese su contraseña"
         placeholderTextColor="#aaa"
-        secureTextEntry // Oculta el texto al escribir
+        secureTextEntry
       />
-
-      {/* Campo Rol */}
       <Text style={styles.label}>Rol (0: Usuario, 1: Administrador):</Text>
       <TextInput
         style={styles.input}
@@ -159,8 +175,6 @@ export default function RegisterScreen() {
         placeholder="0 o 1"
         placeholderTextColor="#aaa"
       />
-
-      {/* Botón de Registrar */}
       <TouchableOpacity
         style={[styles.button, loading && { backgroundColor: '#ccc' }]}
         onPress={handleSubmit}
