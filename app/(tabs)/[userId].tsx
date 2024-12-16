@@ -28,6 +28,7 @@ export default function ProfileScreen() {
         `${Endpoints.GET_USER}/${userId}`
       );
       setUser(userResponse.data);
+      console.log('datos de usuario:', userResponse.data);
 
       // Obtener reservas del usuario
       const reservasResponse = await genericService.httpGet(
@@ -61,7 +62,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <UserHeader name={user.name} surname={user.surname} />
+      <UserHeader name={user.name} surname={user.surname} role={user.role} />
       <Stats reservations={reservas.length} followers={0} following={0} />
       <ReservationList reservations={reservas} />
     </View>

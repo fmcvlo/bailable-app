@@ -7,46 +7,39 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
-import { Avatar } from 'react-native-paper';
+import { Avatar, Button } from 'react-native-paper';
 import { FontAwesome } from 'react-native-vector-icons';
-import EventCard from '../../components/EventCard';
 import { GenericHtppService } from '../services/genericHtppService';
 import Endpoints from '../../helpers/endpoints';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, Link } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function HomeScreen() {
-  const [events, setEvents] = useState([]);
-  const [filteredEvents, setFilteredEvents] = useState([]);
+export default function LocalesScreen() {
+  const [locales, setLocales] = useState([]);
+  const [filteredLocales, setFilteredLocales] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const adaptEvent = (event) => ({
-    id: event.evento_id || 'undefined-id',
-    title: event.nombre || 'Título no disponible',
-    description: event.descripcion || 'Descripción no disponible',
-    date: event.date
-      ? new Date(event.date).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-        })
-      : 'Fecha no disponible',
-    image: event.imgSource
-      ? `http://your-server-url${event.imgSource}`
+  const adaptLocal = (local) => ({
+    id: local.localId || 'undefined-id',
+    name: local.nombre || 'Nombre no disponible',
+    address: local.direccion || 'Dirección no disponible',
+    image: local.image
+      ? `http://your-server-url${local.image}`
       : 'http://your-server-url/default-image.jpg',
   });
 
-  const fetchEventos = async () => {
+  const fetchLocales = async () => {
     const genericService = new GenericHtppService();
     try {
-      let date = new Date().toISOString().split('T')[0];
-      date = '2024-12-30';
-      const response = await genericService.httpGet(Endpoints.EVENTOS, {
-        date,
+      const duenioId = await AsyncStorage.getItem('userId');
+      const response = await genericService.httpGet(Endpoints.LOCALES, {
+        duenioId,
       });
-      const adaptedEvents = response.data.map(adaptEvent);
-      setEvents(adaptedEvents);
-      setFilteredEvents(adaptedEvents);
+      const adaptedLocales = response.data.map(adaptLocal);
+      setLocales(adaptedLocales);
+      setFilteredLocales(adaptedLocales);
       setError(null);
     } catch (err) {
       setError('No se pudieron cargar los datos.');
@@ -58,26 +51,38 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
-      fetchEventos();
+      fetchLocales();
     }, [])
   );
 
   useEffect(() => {
     if (searchText === '') {
-      setFilteredEvents(events);
+      setFilteredLocales(locales);
     } else {
-      const filtered = events.filter(
-        (event) =>
-          event.title.toLowerCase().includes(searchText.toLowerCase()) ||
-          event.description.toLowerCase().includes(searchText.toLowerCase())
+      const filtered = locales.filter(
+        (local) =>
+          local.name.toLowerCase().includes(searchText.toLowerCase()) ||
+          local.address.toLowerCase().includes(searchText.toLowerCase())
       );
-      setFilteredEvents(filtered);
+      setFilteredLocales(filtered);
     }
-  }, [searchText, events]);
+  }, [searchText, locales]);
 
-  const renderPlace = ({ item }) => (
-    <View style={styles.eventCardContainer}>
-      <EventCard event={item} />
+  const renderLocal = ({ item }) => (
+    <View style={{ width: 350, marginBottom: 16 }}>
+      <Link href={`/local/${item.id}`} asChild>
+        <View style={styles.localCard}>
+          <Avatar.Image
+            size={70}
+            source={{ uri: item.image }}
+            style={styles.avatar}
+          />
+          <View style={styles.localInfo}>
+            <Text style={styles.localName}>{item.name}</Text>
+            <Text style={styles.localAddress}>{item.address}</Text>
+          </View>
+        </View>
+      </Link>
     </View>
   );
 
@@ -110,25 +115,25 @@ export default function HomeScreen() {
           />
           <TextInput
             style={styles.searchInput}
-            placeholder="Buscar..."
+            placeholder="Buscar locales..."
             value={searchText}
             onChangeText={(text) => setSearchText(text)}
           />
         </View>
-        <Avatar.Icon size={40} icon="bell-outline" style={styles.avatarIcon} />
-        <Avatar.Icon
-          size={40}
-          icon="account-circle"
-          style={styles.avatarIcon}
-        />
       </View>
-      <Text style={styles.title}>Boliches cercanos</Text>
+      <Text style={styles.title}>Mis Locales</Text>
       <FlatList
         contentContainerStyle={styles.flatListContent}
-        data={filteredEvents}
+        data={filteredLocales}
         keyExtractor={(item, index) => item.id?.toString() || index.toString()}
-        renderItem={renderPlace}
+        renderItem={renderLocal}
+        style={{ width: '100%' }}
       />
+      <Link href="/CrearLocalScreen" asChild>
+        <Button mode="contained" style={styles.createButton}>
+          Crear Local
+        </Button>
+      </Link>
     </View>
   );
 }
@@ -175,10 +180,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
   },
-  avatarIcon: {
-    backgroundColor: 'transparent',
-    marginLeft: 8,
-  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -189,10 +190,44 @@ const styles = StyleSheet.create({
   flatListContent: {
     alignItems: 'center',
     paddingBottom: 16,
-  },
-  eventCardContainer: {
-    marginBottom: 16,
     width: '100%',
+  },
+  localCard: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-start',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    width: 350,
+    height: 100,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  localInfo: {
+    marginLeft: 16,
+    justifyContent: 'center',
+    flex: 1,
+  },
+  localName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1F2937',
+  },
+  localAddress: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  avatar: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+  },
+  createButton: {
+    marginVertical: 16,
+    alignSelf: 'center',
   },
 });

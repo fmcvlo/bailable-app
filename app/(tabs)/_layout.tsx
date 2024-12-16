@@ -1,6 +1,5 @@
 import { Tabs } from 'expo-router';
 import {} from '../services/useAuth';
-import { StyleSheet } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 
 export default function TabsLayout() {
@@ -39,14 +38,37 @@ export default function TabsLayout() {
           ),
         }}
       />
+      CrearLocalScreen
+      <Tabs.Screen
+        name="LocalesScreen"
+        options={{
+          title: 'Locales',
+          href: null,
+          tabBarIcon: ({ color }) => (
+            <FontAwesome size={27} name="map-marker" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="CrearLocalScreen"
+        options={{
+          title: 'CrearLocal',
+          href: null,
+          tabBarIcon: ({ color }) => (
+            <FontAwesome size={27} name="map-marker" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="local/[localId]"
+        options={{
+          title: 'LocalDetalle',
+          href: null,
+          tabBarIcon: ({ color }) => (
+            <FontAwesome size={27} name="map-marker" color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
