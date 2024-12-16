@@ -3,7 +3,7 @@ import axios, { AxiosResponse, AxiosError } from 'axios';
 export class GenericHtppService {
   private baseUrl: string = 'http://localhost:5211';
   private debug: boolean = true;
-  private timeout: number = 10000; // 10 segundos
+  private timeout: number = 20000; // 20 segundos
 
   constructor() {
     axios.defaults.timeout = this.timeout;

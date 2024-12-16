@@ -21,7 +21,9 @@ export default function EventCard({ event }) {
         <View style={styles.card}>
           {/* Imagen del evento */}
           <Image
-            source={{ uri: event.image }}
+            source={{
+              uri: 'https://media.istockphoto.com/id/1471448614/es/foto/multitud-de-personas-bailando-en-un-espect%C3%A1culo-musical-en-barcelona-durante-el-verano-de-2022.jpg?s=612x612&w=0&k=20&c=vnzGsG6u8w9GsIHo9ePJtp88mYgpmbB5bIc4TMROfPg=',
+            }}
             style={styles.image}
             resizeMode="cover"
           />
